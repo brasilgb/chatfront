@@ -25,6 +25,18 @@ Criar `.env.local`:
 NEXT_PUBLIC_API_URL=http://localhost:3001/api
 ```
 
+Para produção bare metal com Nginx no mesmo domínio do frontend:
+
+```env
+NEXT_PUBLIC_API_URL=/api
+```
+
+Se a API estiver em outro domínio ou subdomínio:
+
+```env
+NEXT_PUBLIC_API_URL=https://api.seu-dominio.com/api
+```
+
 ### 4. Estrutura de pastas recomendada
 
 ```
@@ -467,21 +479,65 @@ npm run dev
 
 Acesse: `http://localhost:3000`
 
-## 🚀 Deploy
+## 🚀 Deploy Bare Metal com Nginx
 
-### Backend no Railway/Render/Heroku
+### Backend
 
-1. Fazer commit e push no GitHub
-2. Conectar o repositório no serviço
-3. Definir variáveis de ambiente
-4. Deploy
+No servidor, deixe o backend rodando em `127.0.0.1:3001` com:
 
-### Frontend no Vercel
+```env
+PORT=3001
+NODE_ENV=production
+OLLAMA_URL=http://127.0.0.1:11434
+MODEL=gemma3:4b
+FRONTEND_URL=https://seu-dominio.com
+```
 
-1. Fazer commit e push no GitHub
-2. Importar no Vercel
-3. Definir `NEXT_PUBLIC_API_URL` como URL do backend
-4. Deploy automático
+Use um gerenciador de processo, como `systemd` ou `pm2`, para manter o Node ativo.
+
+Teste no servidor:
+
+```bash
+curl http://127.0.0.1:3001/health
+curl http://127.0.0.1:3001/api/chat/health
+curl -X POST http://127.0.0.1:3001/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message":"Responda exatamente: TESTE_GEMMA_OK"}'
+```
+
+### Frontend
+
+Se o Nginx publica o frontend e também repassa `/api` para o backend, configure:
+
+```env
+NEXT_PUBLIC_API_URL=/api
+```
+
+Exemplo de proxy Nginx para a API:
+
+```nginx
+location /api/ {
+    proxy_pass http://127.0.0.1:3001/api/;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+location /health {
+    proxy_pass http://127.0.0.1:3001/health;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+}
+```
+
+Depois do Nginx configurado, teste pelo domínio:
+
+```bash
+curl https://seu-dominio.com/health
+curl https://seu-dominio.com/api/chat/health
+```
 
 ## 🔗 Links Úteis
 
