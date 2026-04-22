@@ -24,7 +24,7 @@ export default function ChatBox() {
     <div className="flex flex-col h-screen bg-gray-100">
       {/* Header */}
       <div className="bg-white shadow p-4 flex justify-between items-center">
-        <h1 className="text-2xl font-bold">🤖 Chatbot</h1>
+        <h1 className="text-2xl font-bold text-gray-700">🤖 Chatbot</h1>
         <div className="flex items-center gap-4">
           <label className="flex items-center gap-2">
             <input
@@ -33,7 +33,7 @@ export default function ChatBox() {
               onChange={(e) => setUseStream(e.target.checked)}
               className="w-4 h-4"
             />
-            <span className="text-sm">Streaming</span>
+            <span className="text-sm text-gray-700">Streaming</span>
           </label>
           <button
             onClick={clearMessages}

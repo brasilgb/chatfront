@@ -30,7 +30,8 @@ export default function MessageInput({
         onChange={(e) => setInput(e.target.value)}
         disabled={disabled}
         placeholder="Digite uma mensagem..."
-        className="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+        /* Adicionado text-gray-700 para o texto digitado e mantido placeholder:text-gray-700 */
+        className="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 text-gray-700 placeholder:text-gray-700"
       />
       <button
         type="submit"

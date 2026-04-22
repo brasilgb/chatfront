@@ -20,7 +20,7 @@ export default function MessageList({ messages, loading }: MessageListProps) {
       {messages.length === 0 && (
         <div className="flex items-center justify-center h-full">
           <p className="text-gray-500 text-center">
-            Inicie uma conversa! 👋
+            Inicie uma conversa!
           </p>
         </div>
       )}
