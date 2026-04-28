@@ -10,7 +10,7 @@ export function useChat() {
   const abortControllerRef = useRef<AbortController | null>(null)
 
   const sendMessage = useCallback(
-    async (content: string, useStream = false) => {
+    async (content: string, useStream = false, date?: string) => {
       if (!content.trim()) return
 
       setError(null)
@@ -26,6 +26,7 @@ export function useChat() {
           for await (const chunk of chatApi.streamMessage(
             content,
             messages,
+            date,
             abortControllerRef.current?.signal
           )) {
             if (abortControllerRef.current?.signal.aborted) break
@@ -63,7 +64,7 @@ export function useChat() {
         setLoading(true)
 
         try {
-          const response = await chatApi.sendMessage(content, messages)
+          const response = await chatApi.sendMessage(content, messages, date)
 
           if (response.success) {
             setMessages((prev) => [

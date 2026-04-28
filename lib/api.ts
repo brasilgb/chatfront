@@ -1,15 +1,15 @@
 import { Message, ChatResponse, HealthResponse } from './types/chat'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+const API_URL = process.env.NEXT_PUBLIC_API_URL
 
 export const chatApi = {
-  async sendMessage(message: string, history: Message[] = []) {
+  async sendMessage(message: string, history: Message[] = [], date?: string) {
     const response = await fetch(`${API_URL}/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ message, history }),
+      body: JSON.stringify({ message, history, date }),
     })
 
     if (!response.ok) {
@@ -24,13 +24,13 @@ export const chatApi = {
     return response.json() as Promise<HealthResponse>
   },
 
-  async *streamMessage(message: string, history: Message[] = [], signal?: AbortSignal) {
+  async *streamMessage(message: string, history: Message[] = [], date?: string, signal?: AbortSignal) {
     const response = await fetch(`${API_URL}/chat/stream`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ message, history }),
+      body: JSON.stringify({ message, history, date }),
       signal,
     })
 
@@ -40,6 +40,7 @@ export const chatApi = {
 
     const reader = response.body?.getReader()
     const decoder = new TextDecoder()
+    let buffer = ''
 
     if (!reader) return
 
@@ -48,14 +49,23 @@ export const chatApi = {
         if (signal?.aborted) break
 
         const { done, value } = await reader.read()
-        if (done) break
+        if (done) {
+          if (buffer.trim().startsWith('data: ')) {
+            yield buffer.trim().slice(6)
+          }
+          break
+        }
 
-        const text = decoder.decode(value)
-        const lines = text.split('\n').filter((line) => line.trim())
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        
+        // O último elemento pode ser incompleto
+        buffer = lines.pop() || ''
 
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            yield line.slice(6)
+          const trimmed = line.trim()
+          if (trimmed.startsWith('data: ')) {
+            yield trimmed.slice(6)
           }
         }
       }

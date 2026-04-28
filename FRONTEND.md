@@ -91,13 +91,13 @@ export interface HealthResponse {
 const API_URL = process.env.NEXT_PUBLIC_API_URL
 
 export const chatApi = {
-  async sendMessage(message: string, history: Message[] = []) {
+  async sendMessage(message: string, history: Message[] = [], date?: string) {
     const response = await fetch(`${API_URL}/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ message, history }),
+      body: JSON.stringify({ message, history, date }),
     })
 
     if (!response.ok) {
@@ -112,13 +112,13 @@ export const chatApi = {
     return response.json() as Promise<HealthResponse>
   },
 
-  async *streamMessage(message: string, history: Message[] = []) {
+  async *streamMessage(message: string, history: Message[] = [], date?: string) {
     const response = await fetch(`${API_URL}/chat/stream`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ message, history }),
+      body: JSON.stringify({ message, history, date }),
     })
 
     if (!response.ok) {
@@ -127,20 +127,30 @@ export const chatApi = {
 
     const reader = response.body?.getReader()
     const decoder = new TextDecoder()
+    let buffer = ''
 
     if (!reader) return
 
     try {
       while (true) {
         const { done, value } = await reader.read()
-        if (done) break
+        if (done) {
+          if (buffer.trim().startsWith('data: ')) {
+            yield buffer.trim().slice(6)
+          }
+          break
+        }
 
-        const text = decoder.decode(value)
-        const lines = text.split('\\n').filter((line) => line.trim())
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        
+        // O último elemento pode ser incompleto
+        buffer = lines.pop() || ''
 
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            yield line.slice(6)
+          const trimmed = line.trim()
+          if (trimmed.startsWith('data: ')) {
+            yield trimmed.slice(6)
           }
         }
       }
@@ -167,7 +177,7 @@ export function useChat() {
   const abortControllerRef = useRef<AbortController | null>(null)
 
   const sendMessage = useCallback(
-    async (content: string, useStream = false) => {
+    async (content: string, useStream = false, date?: string) => {
       if (!content.trim()) return
 
       setError(null)
@@ -180,14 +190,17 @@ export function useChat() {
         try {
           for await (const chunk of chatApi.streamMessage(
             content,
-            messages
+            messages,
+            date
           )) {
             try {
               const data = JSON.parse(chunk)
               fullResponse += data.message?.content || ''
-              // Aqui você pode atualizar a UI em tempo real
+              
+              // Opcional: Atualizar a última mensagem em tempo real
+              // setMessages(prev => ...)
             } catch {
-              // Ignorar linhas que não são JSON válido
+              // Ignorar chunks não-JSON
             }
           }
 
@@ -206,7 +219,7 @@ export function useChat() {
         setLoading(true)
 
         try {
-          const response = await chatApi.sendMessage(content, messages)
+          const response = await chatApi.sendMessage(content, messages, date)
 
           if (response.success) {
             setMessages((prev) => [
@@ -487,6 +500,7 @@ No servidor, deixe o backend rodando em `127.0.0.1:3001` com:
 
 ```env
 PORT=3001
+HOST=127.0.0.1
 NODE_ENV=production
 OLLAMA_URL=http://127.0.0.1:11434
 MODEL=gemma3:4b
@@ -538,6 +552,22 @@ Depois do Nginx configurado, teste pelo domínio:
 curl https://seu-dominio.com/health
 curl https://seu-dominio.com/api/chat/health
 ```
+
+### WhatsApp Business
+
+O frontend não precisa mudar para o WhatsApp. O canal WhatsApp usa o mesmo backend e o mesmo `chatService`:
+
+```txt
+WhatsApp Business -> /api/whatsapp/webhook -> chatService.chat() -> Ollama/Gemma
+```
+
+No painel da Meta, configure o webhook público:
+
+```txt
+https://seu-dominio.com/api/whatsapp/webhook
+```
+
+O Nginx já atende esse endpoint se `/api/` estiver apontando para `127.0.0.1:3001`.
 
 ## 🔗 Links Úteis
 
