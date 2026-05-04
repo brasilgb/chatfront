@@ -5,8 +5,9 @@ export interface Message {
 
 export interface ChatResponse {
   success: boolean
-  reply: string
-  model?: string
+  answer?: string
+  reply?: string
+  intent?: any
   error?: string
 }
 

@@ -1,86 +1,51 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback } from 'react'
 import { chatApi } from './api'
 import { Message } from './types/chat'
 
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
-  const [streaming, setStreaming] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const abortControllerRef = useRef<AbortController | null>(null)
 
   const sendMessage = useCallback(
-    async (content: string, useStream = false, date?: string) => {
+    async (content: string, date?: string) => {
       if (!content.trim()) return
 
       setError(null)
-      setMessages((prev) => [...prev, { role: 'user', content }])
 
-      if (useStream) {
-        setStreaming(true)
-        let fullResponse = ''
+      const userMessage: Message = {
+        role: 'user',
+        content,
+      }
 
-        abortControllerRef.current = new AbortController()
+      const history = [...messages, userMessage]
 
-        try {
-          for await (const chunk of chatApi.streamMessage(
-            content,
-            messages,
-            date,
-            abortControllerRef.current?.signal
-          )) {
-            if (abortControllerRef.current?.signal.aborted) break
+      setMessages(history)
+      setLoading(true)
 
-            try {
-              const data = JSON.parse(chunk)
-              const newContent = data.message?.content || ''
-              fullResponse += newContent
+      try {
 
-              // Update the last message in real-time
-              setMessages((prev) => {
-                const newMessages = [...prev]
-                if (newMessages.length > 0 && newMessages[newMessages.length - 1].role === 'assistant') {
-                  newMessages[newMessages.length - 1].content = fullResponse
-                } else {
-                  newMessages.push({ role: 'assistant', content: fullResponse })
-                }
-                return newMessages
-              })
-            } catch {
-              // Ignorar linhas que não são JSON válido
-            }
-          }
-        } catch (err) {
-          if (!abortControllerRef.current?.signal.aborted) {
-            setError(
-              err instanceof Error ? err.message : 'Erro ao fazer stream'
-            )
-          }
-        } finally {
-          setStreaming(false)
-          abortControllerRef.current = null
+        const response = await chatApi.sendMessage(content, history, date)
+
+        const answer = response.answer || response.reply || ''
+
+        if (response.success && answer) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: 'assistant',
+              content: answer,
+            },
+          ])
+        } else {
+          setError(response.error || answer || 'Erro desconhecido')
         }
-      } else {
-        setLoading(true)
-
-        try {
-          const response = await chatApi.sendMessage(content, messages, date)
-
-          if (response.success) {
-            setMessages((prev) => [
-              ...prev,
-              { role: 'assistant', content: response.reply },
-            ])
-          } else {
-            setError(response.error || 'Erro desconhecido')
-          }
-        } catch (err) {
-          setError(
-            err instanceof Error ? err.message : 'Erro ao enviar mensagem'
-          )
-        } finally {
-          setLoading(false)
-        }
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : 'Erro ao enviar mensagem'
+        )
+      } finally {
+        setLoading(false)
       }
     },
     [messages]
@@ -91,21 +56,13 @@ export function useChat() {
     setError(null)
   }, [])
 
-  const cancelStreaming = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort()
-      setStreaming(false)
-      abortControllerRef.current = null
-    }
-  }, [])
-
   return {
     messages,
     loading,
-    streaming,
+    streaming: false,
     error,
     sendMessage,
     clearMessages,
-    cancelStreaming,
+    cancelStreaming: () => { },
   }
 }
