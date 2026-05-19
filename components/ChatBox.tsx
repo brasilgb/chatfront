@@ -4,6 +4,7 @@ import { useChat } from '@/lib/useChat'
 import MessageList from './MessageList'
 import MessageInput from './MessageInput'
 import Link from 'next/link'
+import { useEffect } from 'react'
 
 export default function ChatBox() {
   const {
@@ -11,12 +12,23 @@ export default function ChatBox() {
     loading,
     error,
     sendMessage,
-    clearMessages,
   } = useChat()
 
   const handleSendMessage = async (message: string) => {
     await sendMessage(message)
   }
+
+  useEffect(() => {
+  const handler = (event: any) => {
+    sendMessage(event.detail)
+  }
+
+  window.addEventListener('chat-select-option', handler)
+
+  return () => {
+    window.removeEventListener('chat-select-option', handler)
+  }
+}, [sendMessage])
 
   return (
     <div className="flex flex-col h-screen bg-gray-100">

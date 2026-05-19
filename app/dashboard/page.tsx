@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   LineChart,
   Line,
@@ -59,7 +59,7 @@ export default function Dashboard() {
   const [respostaAprendida, setRespostaAprendida] = useState("");
   const [salvandoAprendizado, setSalvandoAprendizado] = useState(false);
 
-  const carregarDados = async () => {
+  const carregarDados = useCallback(async () => {
     const params = new URLSearchParams();
 
     if (inicio) params.append("inicio", inicio);
@@ -100,11 +100,15 @@ export default function Dashboard() {
     setTopPerguntas(topPerguntasJson.data || []);
     setRankingIntents(rankingIntentsJson.data || []);
     setTopSemResposta(topSemRespostaJson.data || []);
-  };
+  }, [fim, inicio]);
 
   useEffect(() => {
-    carregarDados();
-  }, []);
+    const timeoutId = window.setTimeout(() => {
+      void carregarDados();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [carregarDados]);
 
   const abrirModalAprendizado = (log: Log) => {
     setPerguntaSelecionada(log);
@@ -414,7 +418,7 @@ function ChartCard({ data }: { data: UsoPorDia[] }) {
         </p>
       </div>
 
-      <div className="h-[320px]">
+      <div className="w-full min-w-0 h-75">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
