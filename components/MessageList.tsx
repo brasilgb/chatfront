@@ -12,6 +12,7 @@ export default function MessageList({ messages, loading }: MessageListProps) {
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
+  
 
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -43,8 +44,8 @@ export default function MessageList({ messages, loading }: MessageListProps) {
                 }`}
             >
               <div className="space-y-3">
-                {msg.content && <p>{msg.content}</p>}
-
+                {msg.content && <p className='whitespace-pre-line'>{msg.content}</p>}
+<h1>blablablkablkbalalbalblabbablaalbbbablablbabal</h1>
                 {msg.options && msg.options.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {msg.options.map((option) => (
