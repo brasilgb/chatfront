@@ -8,8 +8,9 @@ export interface ChatOption {
 export interface Message {
   role: 'user' | 'assistant'
   content: string
+  image_url?: string | null
   image_path?: string | null
-  options?:ChatOption[]
+  options?: ChatOption[]
 }
 
 export interface ChatIntent {
@@ -29,9 +30,10 @@ export interface ChatResponse {
   reply?: string
   intent?: ChatIntent
   error?: string
-  image_path?: string | null
-  imagePath?: string | null
   image_url?: string | null
+  image_path?: string | null
+  imageUrl?: string | null
+  imagePath?: string | null
   options?: ChatOption[]
 }
 

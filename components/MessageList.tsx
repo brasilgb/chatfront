@@ -6,13 +6,29 @@ interface MessageListProps {
   loading: boolean
 }
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || '/api'
+
+function resolverImageUrl(msg: Message): string | null {
+  const path = msg.image_url || msg.image_path
+
+  if (!path) return null
+
+  if (path.startsWith('http')) {
+    return path
+  }
+
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+
+  return `${API_URL}${normalizedPath}`
+}
+
 export default function MessageList({ messages, loading }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
-  
 
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -25,11 +41,7 @@ export default function MessageList({ messages, loading }: MessageListProps) {
       )}
 
       {messages.map((msg, idx) => {
-        const imageUrl = msg.image_path
-          ? msg.image_path.startsWith('http')
-            ? msg.image_path
-            : `http://localhost:8000${msg.image_path}`
-          : null
+        const imageUrl = resolverImageUrl(msg)
 
         return (
           <div
@@ -38,14 +50,16 @@ export default function MessageList({ messages, loading }: MessageListProps) {
               }`}
           >
             <div
-              className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${msg.role === 'user'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-300 text-black'
+              className={`px-4 py-2 rounded-lg ${msg.role === 'user'
+                  ? 'max-w-xs lg:max-w-md bg-blue-500 text-white'
+                  : 'max-w-xs sm:max-w-2xl lg:max-w-4xl bg-gray-300 text-black'
                 }`}
             >
               <div className="space-y-3">
-                {msg.content && <p className='whitespace-pre-line'>{msg.content}</p>}
-<h1>blablablkablkbalalbalblabbablaalbbbablablbabal</h1>
+                {msg.content && (
+                  <p className="whitespace-pre-line">{msg.content}</p>
+                )}
+
                 {msg.options && msg.options.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {msg.options.map((option) => (
@@ -58,7 +72,7 @@ export default function MessageList({ messages, loading }: MessageListProps) {
                             })
                           )
                         }}
-                        className="rounded-lg border border-gray-400 bg-white px-3 py-2 text-sm hover:bg-gray-100 transition"
+                        className="rounded-lg border border-gray-400 bg-white px-3 py-2 text-sm text-black hover:bg-gray-100 transition"
                       >
                         {option.label}
                       </button>
@@ -67,11 +81,13 @@ export default function MessageList({ messages, loading }: MessageListProps) {
                 )}
 
                 {imageUrl && (
-                  <img
-                    src={imageUrl}
-                    alt="Relatório"
-                    className="mt-2 rounded-lg border max-w-full bg-white"
-                  />
+                  <a href={imageUrl} target="_blank" rel="noreferrer">
+                    <img
+                      src={imageUrl}
+                      alt="Relatório"
+                      className="mt-2 max-w-full rounded-lg border bg-white shadow-sm"
+                    />
+                  </a>
                 )}
               </div>
             </div>
