@@ -12,6 +12,7 @@ export default function ChatBox() {
     loading,
     error,
     sendMessage,
+    resetChat,
   } = useChat()
 
   const handleSendMessage = async (message: string) => {
@@ -19,28 +20,39 @@ export default function ChatBox() {
   }
 
   useEffect(() => {
-  const handler = (event: any) => {
-    sendMessage(event.detail)
-  }
+    const handler = (event: Event) => {
+      sendMessage((event as CustomEvent<string>).detail)
+    }
 
-  window.addEventListener('chat-select-option', handler)
+    window.addEventListener('chat-select-option', handler)
 
-  return () => {
-    window.removeEventListener('chat-select-option', handler)
-  }
-}, [sendMessage])
+    return () => {
+      window.removeEventListener('chat-select-option', handler)
+    }
+  }, [sendMessage])
 
   return (
     <div className="flex flex-col h-screen bg-gray-100">
       <div className="bg-white shadow p-4 flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-700">🤖 Chatbot</h1>
 
-        <Link
-        href={'/dashboard'}
-          className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600"
-        >
-          Dashboard
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={resetChat}
+            disabled={loading}
+            className="border border-gray-300 bg-white px-3 py-1 rounded text-sm text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Resetar chat
+          </button>
+
+          <Link
+            href={'/dashboard'}
+            className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600"
+          >
+            Dashboard
+          </Link>
+        </div>
       </div>
 
       <MessageList messages={messages} loading={loading} />

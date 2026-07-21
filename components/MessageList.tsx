@@ -6,9 +6,6 @@ interface MessageListProps {
   loading: boolean
 }
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || '/api'
-
 function resolverImageUrl(msg: Message): string | null {
   const path = msg.image_url || msg.image_path
 
@@ -18,9 +15,7 @@ function resolverImageUrl(msg: Message): string | null {
     return path
   }
 
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`
-
-  return `${API_URL}${normalizedPath}`
+  return path.startsWith('/') ? path : `/${path}`
 }
 
 export default function MessageList({ messages, loading }: MessageListProps) {

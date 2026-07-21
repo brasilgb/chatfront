@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { chatApi } from './api'
 import { Message } from './types/chat'
 
@@ -28,14 +28,14 @@ function resetChatbotStorageIfNeeded() {
   }
 }
 
-function createSessionId() {
+function createSessionId(forceNew = false) {
   if (typeof window === 'undefined') return ''
 
   resetChatbotStorageIfNeeded()
 
   let sessionId = window.localStorage.getItem(SESSION_KEY)
 
-  if (!sessionId) {
+  if (forceNew || !sessionId) {
     if (window.crypto?.randomUUID) {
       sessionId = window.crypto.randomUUID()
     } else {
@@ -52,13 +52,7 @@ export function useChat() {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [sessionId, setSessionId] = useState('')
-
-  useEffect(() => {
-    const id = createSessionId()
-    console.log('SESSION_ID:', id)
-    setSessionId(id)
-  }, [])
+  const [sessionId, setSessionId] = useState(() => createSessionId())
 
   const sendMessage = useCallback(
     async (content: string) => {
@@ -123,12 +117,24 @@ export function useChat() {
     setError(null)
   }, [])
 
+  const resetChat = useCallback(() => {
+    const id = createSessionId(true)
+
+    console.log('SESSION_ID_RESET:', id)
+
+    setMessages([])
+    setError(null)
+    setLoading(false)
+    setSessionId(id)
+  }, [])
+
   return {
     messages,
     loading,
     error,
     sendMessage,
     clearMessages,
+    resetChat,
     sessionId,
   }
 }
